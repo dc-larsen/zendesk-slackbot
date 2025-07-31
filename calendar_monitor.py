@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 import tempfile
 from datetime import datetime, timedelta
 from google.auth.transport.requests import Request
@@ -24,8 +25,14 @@ class CalendarMonitor:
                 if not GOOGLE_CREDENTIALS_JSON.strip():
                     raise ValueError("GOOGLE_CREDENTIALS_JSON is empty or contains only whitespace")
                 
-                # Parse the JSON credentials
-                creds_info = json.loads(GOOGLE_CREDENTIALS_JSON.strip())
+                # Decode base64 encoded JSON credentials
+                try:
+                    decoded_json = base64.b64decode(GOOGLE_CREDENTIALS_JSON.strip()).decode('utf-8')
+                    creds_info = json.loads(decoded_json)
+                except Exception as decode_error:
+                    # If base64 decoding fails, try parsing as plain JSON (fallback)
+                    print(f"Base64 decode failed, trying plain JSON: {decode_error}")
+                    creds_info = json.loads(GOOGLE_CREDENTIALS_JSON.strip())
                 
                 # Check if it's a service account
                 if creds_info.get('type') == 'service_account':
