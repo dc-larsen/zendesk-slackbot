@@ -1,11 +1,14 @@
 import os
+import json
+import tempfile
 from datetime import datetime, timedelta
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from google.oauth2.service_account import Credentials as ServiceAccountCredentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import pytz
-from config import GOOGLE_CREDENTIALS_FILE
+from config import GOOGLE_CREDENTIALS_FILE, GOOGLE_CREDENTIALS_JSON
 
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
@@ -14,6 +17,26 @@ class CalendarMonitor:
         self.service = self._authenticate()
     
     def _authenticate(self):
+        # If we have JSON credentials from environment (GitHub Actions/CI)
+        if GOOGLE_CREDENTIALS_JSON:
+            try:
+                # Parse the JSON credentials
+                creds_info = json.loads(GOOGLE_CREDENTIALS_JSON)
+                
+                # Check if it's a service account
+                if creds_info.get('type') == 'service_account':
+                    creds = ServiceAccountCredentials.from_service_account_info(
+                        creds_info, scopes=SCOPES)
+                else:
+                    # It's OAuth2 credentials
+                    creds = Credentials.from_authorized_user_info(creds_info, SCOPES)
+                
+                return build('calendar', 'v3', credentials=creds)
+            except (json.JSONDecodeError, Exception) as e:
+                print(f"Error parsing GOOGLE_CREDENTIALS_JSON: {e}")
+                raise
+        
+        # Fall back to file-based authentication (local development)
         creds = None
         if os.path.exists('token.json'):
             creds = Credentials.from_authorized_user_file('token.json', SCOPES)
@@ -22,6 +45,9 @@ class CalendarMonitor:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
+                if not os.path.exists(GOOGLE_CREDENTIALS_FILE):
+                    raise FileNotFoundError(f"Google credentials file not found: {GOOGLE_CREDENTIALS_FILE}")
+                
                 flow = InstalledAppFlow.from_client_secrets_file(
                     GOOGLE_CREDENTIALS_FILE, SCOPES)
                 creds = flow.run_local_server(port=0)
