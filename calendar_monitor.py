@@ -131,26 +131,57 @@ class CalendarMonitor:
             except Exception as e:
                 print(f"❌ Could not list calendars: {e}")
         
-        events_result = self.service.events().list(
-            calendarId='primary',
-            timeMin=target_start.isoformat() + 'Z',
-            timeMax=target_end.isoformat() + 'Z',
-            singleEvents=True,
-            orderBy='startTime',
-            q='1on1'
-        ).execute()
+        # Try multiple calendar IDs to find the right one
+        calendar_ids_to_try = [
+            'primary',  # Default
+            os.getenv('GOOGLE_CALENDAR_ID'),  # If you want to set a specific calendar ID
+        ]
+        
+        # Add your personal email as a calendar ID (often works for shared calendars)
+        if os.getenv('ZENDESK_EMAIL'):
+            calendar_ids_to_try.append(os.getenv('ZENDESK_EMAIL'))
+        
+        events_result = None
+        successful_calendar_id = None
+        
+        for calendar_id in calendar_ids_to_try:
+            if not calendar_id:
+                continue
+            try:
+                print(f"   🔍 Trying calendar ID: {calendar_id}")
+                events_result = self.service.events().list(
+                    calendarId=calendar_id,
+                    timeMin=target_start.isoformat() + 'Z',
+                    timeMax=target_end.isoformat() + 'Z',
+                    singleEvents=True,
+                    orderBy='startTime',
+                    q='1on1'
+                ).execute()
+                successful_calendar_id = calendar_id
+                print(f"   ✅ Successfully accessed calendar: {calendar_id}")
+                break
+            except Exception as e:
+                print(f"   ❌ Failed to access calendar {calendar_id}: {e}")
+                continue
+        
+        if not events_result:
+            print("   ❌ Could not access any calendar")
+            return []
         
         events = events_result.get('items', [])
         print(f"📅 Found {len(events)} events with '1on1' in search")
         
         # Debug: Also search without query to see all events in time range
-        all_events_result = self.service.events().list(
-            calendarId='primary',
-            timeMin=target_start.isoformat() + 'Z',
-            timeMax=target_end.isoformat() + 'Z',
-            singleEvents=True,
-            orderBy='startTime'
-        ).execute()
+        if successful_calendar_id:
+            all_events_result = self.service.events().list(
+                calendarId=successful_calendar_id,
+                timeMin=target_start.isoformat() + 'Z',
+                timeMax=target_end.isoformat() + 'Z',
+                singleEvents=True,
+                orderBy='startTime'
+            ).execute()
+        else:
+            all_events_result = {'items': []}
         
         all_events = all_events_result.get('items', [])
         print(f"📅 Found {len(all_events)} total events in time range:")
@@ -163,7 +194,7 @@ class CalendarMonitor:
                 today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
                 today_end = today_start + timedelta(days=1)
                 wide_search = self.service.events().list(
-                    calendarId='primary',
+                    calendarId=successful_calendar_id if successful_calendar_id else 'primary',
                     timeMin=today_start.isoformat() + 'Z',
                     timeMax=today_end.isoformat() + 'Z',
                     singleEvents=True,
