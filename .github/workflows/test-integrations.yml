@@ -53,7 +53,7 @@ jobs:
         python -c "import config; print('Configuration loaded successfully')"
         
     - name: Test integration connections (if secrets available)
-      if: ${{ secrets.SLACK_BOT_TOKEN != '' }}
+      if: ${{ secrets.SLACK_BOT_TOKEN != null }}
       env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
