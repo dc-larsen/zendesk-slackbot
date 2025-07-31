@@ -11,6 +11,7 @@ ZENDESK_SUBDOMAIN = os.getenv('ZENDESK_SUBDOMAIN')
 ZENDESK_EMAIL = os.getenv('ZENDESK_EMAIL')
 ZENDESK_API_TOKEN = os.getenv('ZENDESK_API_TOKEN')
 GOOGLE_CREDENTIALS_FILE = os.getenv('GOOGLE_CREDENTIALS_FILE', 'credentials.json')
+GOOGLE_CREDENTIALS_JSON = os.getenv('GOOGLE_CREDENTIALS_JSON')
 
 # Validate required environment variables
 required_vars = [
