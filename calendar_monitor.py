@@ -20,8 +20,12 @@ class CalendarMonitor:
         # If we have JSON credentials from environment (GitHub Actions/CI)
         if GOOGLE_CREDENTIALS_JSON:
             try:
+                # Debug: Check if credentials are properly formatted
+                if not GOOGLE_CREDENTIALS_JSON.strip():
+                    raise ValueError("GOOGLE_CREDENTIALS_JSON is empty or contains only whitespace")
+                
                 # Parse the JSON credentials
-                creds_info = json.loads(GOOGLE_CREDENTIALS_JSON)
+                creds_info = json.loads(GOOGLE_CREDENTIALS_JSON.strip())
                 
                 # Check if it's a service account
                 if creds_info.get('type') == 'service_account':
