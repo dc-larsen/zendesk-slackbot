@@ -73,14 +73,40 @@ class CalendarMonitor:
         now = datetime.utcnow().isoformat() + 'Z'
         future_time = (datetime.utcnow() + timedelta(hours=hours_ahead)).isoformat() + 'Z'
         
-        events_result = self.service.events().list(
-            calendarId='primary',
-            timeMin=now,
-            timeMax=future_time,
-            singleEvents=True,
-            orderBy='startTime',
-            q='1on1'
-        ).execute()
+        # Try multiple calendar IDs to find the right one
+        calendar_ids_to_try = [
+            os.getenv('ZENDESK_EMAIL'),  # Try your email first (most likely to work)
+            'primary',  # Default (service account's own calendar)
+            os.getenv('GOOGLE_CALENDAR_ID'),  # If you want to set a specific calendar ID
+        ]
+        
+        # Remove None values
+        calendar_ids_to_try = [cal_id for cal_id in calendar_ids_to_try if cal_id]
+        
+        events_result = None
+        
+        for calendar_id in calendar_ids_to_try:
+            if not calendar_id:
+                continue
+            try:
+                print(f"🔍 Trying calendar ID: {calendar_id}")
+                events_result = self.service.events().list(
+                    calendarId=calendar_id,
+                    timeMin=now,
+                    timeMax=future_time,
+                    singleEvents=True,
+                    orderBy='startTime',
+                    q='1on1'
+                ).execute()
+                print(f"✅ Successfully accessed calendar: {calendar_id}")
+                break
+            except Exception as e:
+                print(f"❌ Failed to access calendar {calendar_id}: {e}")
+                continue
+        
+        if not events_result:
+            print("❌ Could not access any calendar")
+            return []
         
         events = events_result.get('items', [])
         return self._parse_events(events)
@@ -133,13 +159,13 @@ class CalendarMonitor:
         
         # Try multiple calendar IDs to find the right one
         calendar_ids_to_try = [
-            'primary',  # Default
+            os.getenv('ZENDESK_EMAIL'),  # Try your email first (most likely to work)
+            'primary',  # Default (service account's own calendar)
             os.getenv('GOOGLE_CALENDAR_ID'),  # If you want to set a specific calendar ID
         ]
         
-        # Add your personal email as a calendar ID (often works for shared calendars)
-        if os.getenv('ZENDESK_EMAIL'):
-            calendar_ids_to_try.append(os.getenv('ZENDESK_EMAIL'))
+        # Remove None values
+        calendar_ids_to_try = [cal_id for cal_id in calendar_ids_to_try if cal_id]
         
         events_result = None
         successful_calendar_id = None
