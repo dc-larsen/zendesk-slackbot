@@ -118,6 +118,8 @@ class CalendarMonitor:
         target_start = target_time - timedelta(minutes=2)  # 2-minute window
         target_end = target_time + timedelta(minutes=2)
         
+        print(f"🔍 Searching calendar from {target_start.isoformat()}Z to {target_end.isoformat()}Z (looking {minutes} min ahead)")
+        
         events_result = self.service.events().list(
             calendarId='primary',
             timeMin=target_start.isoformat() + 'Z',
@@ -128,4 +130,20 @@ class CalendarMonitor:
         ).execute()
         
         events = events_result.get('items', [])
+        print(f"📅 Found {len(events)} events with '1on1' in search")
+        
+        # Debug: Also search without query to see all events in time range
+        all_events_result = self.service.events().list(
+            calendarId='primary',
+            timeMin=target_start.isoformat() + 'Z',
+            timeMax=target_end.isoformat() + 'Z',
+            singleEvents=True,
+            orderBy='startTime'
+        ).execute()
+        
+        all_events = all_events_result.get('items', [])
+        print(f"📅 Found {len(all_events)} total events in time range:")
+        for event in all_events:
+            print(f"   - '{event.get('summary', 'No title')}' at {event.get('start', {}).get('dateTime', 'No time')}")
+        
         return self._parse_events(events)
