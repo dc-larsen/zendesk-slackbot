@@ -43,5 +43,5 @@ jobs:
         if [ "$TEST_MODE" = "true" ]; then
           python github_actions_runner.py --test
         else
-          python github_actions_runner.py
+          python github_actions_runner.py --check
         fi
