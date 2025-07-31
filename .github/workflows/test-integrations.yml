@@ -1,0 +1,65 @@
+name: Test Integrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of test to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - slack
+        - zendesk
+        - calendar
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test-integrations:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-mock
+        
+    - name: Run syntax checks
+      run: |
+        python -m py_compile *.py
+        
+    - name: Test configuration loading
+      env:
+        SLACK_BOT_TOKEN: "test-token"
+        SLACK_CHANNEL_ID: "test-channel"
+        ZENDESK_SUBDOMAIN: "test"
+        ZENDESK_EMAIL: "test@example.com"
+        ZENDESK_API_TOKEN: "test-token"
+        GOOGLE_CREDENTIALS_JSON: "dGVzdA=="
+      run: |
+        python -c "import config; print('Configuration loaded successfully')"
+        
+    - name: Test integration connections (if secrets available)
+      if: ${{ secrets.SLACK_BOT_TOKEN != '' }}
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        ZENDESK_SUBDOMAIN: ${{ secrets.ZENDESK_SUBDOMAIN }}
+        ZENDESK_EMAIL: ${{ secrets.ZENDESK_EMAIL }}
+        ZENDESK_API_TOKEN: ${{ secrets.ZENDESK_API_TOKEN }}
+        GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+      run: |
+        python github_actions_runner.py --test --dry-run
