@@ -120,6 +120,17 @@ class CalendarMonitor:
         
         print(f"🔍 Searching calendar from {target_start.isoformat()}Z to {target_end.isoformat()}Z (looking {minutes} min ahead)")
         
+        # First, try to list all calendars to see what we have access to
+        if minutes == 25:  # Only do this once
+            try:
+                calendars_result = self.service.calendarList().list().execute()
+                calendars = calendars_result.get('items', [])
+                print(f"📋 Available calendars ({len(calendars)}):")
+                for cal in calendars:
+                    print(f"   - '{cal.get('summary', 'No name')}' (ID: {cal.get('id')}) - Access: {cal.get('accessRole')}")
+            except Exception as e:
+                print(f"❌ Could not list calendars: {e}")
+        
         events_result = self.service.events().list(
             calendarId='primary',
             timeMin=target_start.isoformat() + 'Z',
@@ -145,5 +156,28 @@ class CalendarMonitor:
         print(f"📅 Found {len(all_events)} total events in time range:")
         for event in all_events:
             print(f"   - '{event.get('summary', 'No title')}' at {event.get('start', {}).get('dateTime', 'No time')}")
+        
+        # Also search in a much wider time range to see if there are ANY events today
+        if minutes == 25:  # Only do this once
+            try:
+                today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                today_end = today_start + timedelta(days=1)
+                wide_search = self.service.events().list(
+                    calendarId='primary',
+                    timeMin=today_start.isoformat() + 'Z',
+                    timeMax=today_end.isoformat() + 'Z',
+                    singleEvents=True,
+                    orderBy='startTime'
+                ).execute()
+                
+                wide_events = wide_search.get('items', [])
+                print(f"🌅 Found {len(wide_events)} total events today:")
+                for event in wide_events[:5]:  # Show first 5
+                    start_time = event.get('start', {}).get('dateTime', event.get('start', {}).get('date', 'No time'))
+                    print(f"   - '{event.get('summary', 'No title')}' at {start_time}")
+                if len(wide_events) > 5:
+                    print(f"   ... and {len(wide_events) - 5} more events")
+            except Exception as e:
+                print(f"❌ Could not search today's events: {e}")
         
         return self._parse_events(events)
