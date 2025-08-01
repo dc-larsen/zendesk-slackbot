@@ -12,6 +12,8 @@ class ZendeskClient:
             'Content-Type': 'application/json',
             'User-Agent': 'ZendeskSlackbot/1.0'
         }
+        # Test connection on initialization
+        self.test_connection()
     
     def _make_request(self, endpoint, params=None):
         """Make authenticated request to Zendesk API"""
@@ -28,9 +30,33 @@ class ZendeskClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            # Log safely without exposing sensitive data
+            # Enhanced error logging for debugging
             print(f"Error making request to Zendesk API: {type(e).__name__}")
+            print(f"URL: {self.base_url}/{endpoint}")
+            print(f"Status Code: {getattr(e.response, 'status_code', 'N/A')}")
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_details = e.response.json()
+                    print(f"Error Details: {error_details}")
+                except:
+                    print(f"Response Text: {e.response.text}")
             return None
+    
+    def test_connection(self):
+        """Test basic connection to Zendesk API"""
+        try:
+            print(f"🔍 Testing Zendesk connection to: {self.base_url}")
+            result = self._make_request('users/me.json')
+            if result:
+                user = result.get('user', {})
+                print(f"✅ Zendesk connection successful - authenticated as: {user.get('name', 'Unknown')} ({user.get('email', 'No email')})")
+                return True
+            else:
+                print("❌ Zendesk connection test failed")
+                return False
+        except Exception as e:
+            print(f"❌ Zendesk connection test error: {e}")
+            return False
     
     def _sanitize_email(self, email):
         """Validate and sanitize email address"""
