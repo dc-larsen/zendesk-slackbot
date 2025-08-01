@@ -49,7 +49,7 @@ This bot runs automatically on GitHub Actions - no servers or infrastructure nee
 
 You'll need to get API keys from three services. Don't worry - they're all free!
 
-#### 2.1 Slack Bot Setup (5 minutes)
+#### 2.1 Slack Bot Setup (6 minutes)
 
 1. Go to https://api.slack.com/apps
 2. Click **"Create New App"** → **"From scratch"**
@@ -63,6 +63,10 @@ You'll need to get API keys from three services. Don't worry - they're all free!
 8. Get your channel ID:
    - Right-click on your target Slack channel → "Copy link"
    - The ID is the part after `/channels/` (looks like `C1234567890`)
+9. **Add the bot to your target channel**:
+   - Go to your target Slack channel
+   - Type `/invite @1on1 Performance Bot` (or whatever you named it)
+   - Or right-click the channel → "View channel details" → "Integrations" → "Add apps"
 
 #### 2.2 Zendesk API Setup (3 minutes)
 
@@ -73,24 +77,36 @@ You'll need to get API keys from three services. Don't worry - they're all free!
 5. Give it a name like "1on1 Bot" and copy the token
 6. Note your Zendesk subdomain (e.g., if your URL is `company.zendesk.com`, the subdomain is `company`)
 
-#### 2.3 Google Calendar API Setup (7 minutes)
+#### 2.3 Google Calendar API Setup (8 minutes)
 
 1. Go to https://console.cloud.google.com/
 2. Click **"Create Project"** (top dropdown) or select existing project
 3. Name it something like "Zendesk Slackbot"
 4. Go to **"APIs & Services"** → **"Library"**
 5. Search for **"Google Calendar API"** and click **"Enable"**
-6. Go to **"APIs & Services"** → **"Credentials"**
-7. Click **"Create Credentials"** → **"OAuth client ID"**
-8. Choose **"Desktop application"**
-9. Download the JSON file
-10. **Important**: Base64 encode the file:
+6. Go to **"APIs & Services"** → **"Credentials"** 
+7. Click **"Create Credentials"** → **"Service account"**
+8. Name it "zendesk-slackbot" and add description "Service account for Zendesk Slackbot"
+9. Click **"Create and Continue"** → Skip optional steps → **"Done"**
+10. Click on the created service account
+11. Go to **"Keys"** tab → **"Add Key"** → **"Create new key"** → **"JSON"**
+12. Download the JSON file (this contains your service account credentials)
+13. **Share your calendar with the service account**:
+    - Open Google Calendar
+    - Go to your calendar settings (gear icon → Settings)
+    - Select your calendar on the left
+    - Scroll to "Share with specific people or groups"
+    - Click **"Add people and groups"**
+    - Paste the service account email from the JSON file (looks like `zendesk-slackbot@project-name.iam.gserviceaccount.com`)
+    - Set permission to **"Make changes to events"**
+    - Click **"Send"**
+14. **Important**: Base64 encode the service account JSON file:
     ```bash
     # Mac/Linux:
-    base64 -i credentials.json | pbcopy
+    base64 -i service-account-key.json | pbcopy
     
     # Windows (PowerShell):
-    [Convert]::ToBase64String([IO.File]::ReadAllBytes("credentials.json")) | Set-Clipboard
+    [Convert]::ToBase64String([IO.File]::ReadAllBytes("service-account-key.json")) | Set-Clipboard
     
     # Or use an online base64 encoder and paste the JSON content
     ```
@@ -166,15 +182,18 @@ Want to change when the bot runs? Edit `.github/workflows/meeting-monitor.yml`:
 - Check that the email has admin permissions in Zendesk
 - Confirm the subdomain is correct (no `.zendesk.com` suffix)
 
-### "Error sending message"
+### "Error sending message" or "channel_not_found"
 - Verify Slack bot token starts with `xoxb-`
-- Check that the bot is added to the target channel
+- **IMPORTANT**: Make sure the bot is added to the target channel (see step 9 in Slack setup)
 - Ensure bot has `chat:write` permissions
+- For private channels, you must manually invite the bot using `/invite @BotName`
 
-### "Could not authenticate with Google"
-- Re-check that credentials are properly base64 encoded
+### "Could not authenticate with Google" or "No upcoming meetings found"
+- Re-check that service account credentials are properly base64 encoded
 - Verify Calendar API is enabled in Google Cloud Console
-- The first run might fail - OAuth tokens are cached after successful auth
+- **IMPORTANT**: Make sure you shared your calendar with the service account email
+- Check that the service account has "Make changes to events" permission on your calendar
+- Service account email should look like: `zendesk-slackbot@project-name.iam.gserviceaccount.com`
 
 ## 💬 Getting Help
 
@@ -302,14 +321,14 @@ This bot runs entirely on **GitHub Actions** with these benefits:
 2. **Checks Google Calendar** for 1on1 meetings starting in 25-35 minutes  
 3. **Pulls Zendesk metrics** for the meeting attendee (agent)
 4. **Sends formatted report** to Slack with performance insights
-5. **Caches OAuth tokens** securely between runs
+5. **Uses service account authentication** for secure, automated access
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Google Calendar Authentication**: Run the script interactively first to complete OAuth flow
-2. **Slack Permissions**: Ensure bot has `chat:write` permission for target channel
+1. **Google Calendar Access**: Ensure calendar is shared with service account email
+2. **Slack Permissions**: Ensure bot has `chat:write` permission and is added to target channel
 3. **Zendesk Rate Limits**: Built-in error handling for API limits
 4. **Agent Email Matching**: Ensure calendar attendee emails match Zendesk user emails
 
@@ -347,7 +366,7 @@ This application implements comprehensive security measures suitable for enterpr
 - ✅ Sensitive data filtering in logs
 - ✅ PII sanitization in Slack messages
 - ✅ Limited data exposure in error messages
-- ✅ Secure OAuth token caching
+- ✅ Secure service account credential handling
 
 ### 🚨 Security Requirements
 
