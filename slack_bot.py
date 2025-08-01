@@ -72,17 +72,17 @@ class SlackBot:
         meeting_time = meeting_info.get('start_time', 'Unknown time')
         
         message = f"""
-🎯 **1on1 Performance Summary**
-👤 **Agent:** {agent_name}
-📅 **Meeting:** {meeting_time}
+🎯 *1on1 Performance Summary*
+👤 *Agent:* {agent_name}
+📅 *Meeting:* {meeting_time}
 
-📊 **Last Week Performance:**
+📊 *Last Week Performance:*
 • 📋 Total Tickets: {metrics['total_tickets']}
 • ✅ Solved Tickets: {metrics['solved_tickets']}
 • 💬 Internal Comments: {metrics['internal_comments']}
 • 🗣️ External Comments: {metrics['external_comments']}
 
-🚨 **Urgent Tickets ({len(metrics['urgent_tickets'])}):**
+🚨 *Urgent Tickets ({len(metrics['urgent_tickets'])}):*
 """
         
         if metrics['urgent_tickets']:
@@ -92,7 +92,7 @@ class SlackBot:
         else:
             message += "   ✨ No urgent tickets\n"
         
-        message += f"\n⏸️ **On-Hold Tickets ({len(metrics['on_hold_tickets'])}):**\n"
+        message += f"\n⏸️ *On-Hold Tickets ({len(metrics['on_hold_tickets'])}):*\n"
         
         if metrics['on_hold_tickets']:
             for ticket in metrics['on_hold_tickets']:
@@ -106,7 +106,7 @@ class SlackBot:
             message += "   ✨ No tickets on hold\n"
         
         # Add old tickets section
-        message += f"\n📅 **Old Tickets - Over 2 Weeks ({len(metrics.get('old_tickets', []))}):**\n"
+        message += f"\n📅 *Old Tickets - Over 2 Weeks ({len(metrics.get('old_tickets', []))}):*\n"
         
         if metrics.get('old_tickets'):
             for ticket in metrics['old_tickets'][:5]:  # Limit to first 5
@@ -124,7 +124,7 @@ class SlackBot:
             message += "   ✨ No old tickets\n"
         
         # Add CSAT sections
-        message += f"\n😊 **Positive CSAT Feedback ({len(metrics.get('positive_csat', []))}):**\n"
+        message += f"\n😊 *Positive CSAT Feedback ({len(metrics.get('positive_csat', []))}):*\n"
         
         if metrics.get('positive_csat'):
             for ticket in metrics['positive_csat'][:3]:  # Limit to first 3
@@ -145,7 +145,7 @@ class SlackBot:
         else:
             message += "   📝 No positive CSAT ratings this week\n"
         
-        message += f"\n😔 **Negative CSAT Feedback ({len(metrics.get('negative_csat', []))}):**\n"
+        message += f"\n😔 *Negative CSAT Feedback ({len(metrics.get('negative_csat', []))}):*\n"
         
         if metrics.get('negative_csat'):
             for ticket in metrics['negative_csat'][:3]:  # Limit to first 3
@@ -167,7 +167,7 @@ class SlackBot:
             message += "   ✨ No negative CSAT ratings this week\n"
         
         # Add SLA breach section
-        message += f"\n⏰ **SLA Breaches ({len(metrics.get('sla_breaches', []))}):**\n"
+        message += f"\n⏰ *SLA Breaches ({len(metrics.get('sla_breaches', []))}):*\n"
         
         if metrics.get('sla_breaches'):
             for ticket in metrics['sla_breaches'][:5]:  # Limit to first 5
@@ -184,7 +184,7 @@ class SlackBot:
         else:
             message += "   ✨ No SLA breaches\n"
         
-        message += "\n💡 **Discussion Points:**\n"
+        message += "\n💡 *Discussion Points:*\n"
         
         # Add discussion points based on metrics
         if metrics['total_tickets'] == 0:
@@ -226,5 +226,5 @@ class SlackBot:
     
     def send_error_notification(self, error_message):
         """Send error notification to Slack"""
-        message = f"❌ **Zendesk Slackbot Error**\n```{error_message}```"
+        message = f"❌ *Zendesk Slackbot Error*\n```{error_message}```"
         return self.send_message(message)
