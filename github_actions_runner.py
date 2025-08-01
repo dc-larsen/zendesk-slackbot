@@ -57,11 +57,19 @@ class GitHubActionsRunner:
             # Check for meetings in a 10-minute window (25-35 minutes from now)
             # This accounts for the 5-minute cron interval
             meetings_found = False
+            processed_meetings = set()  # Track processed meetings to avoid duplicates
             
             for minutes_ahead in range(25, 36):
                 upcoming_meetings = self.calendar_monitor.get_meetings_starting_in_minutes(minutes_ahead)
                 
                 for meeting in upcoming_meetings:
+                    # Create unique identifier for meeting to avoid duplicates
+                    meeting_id = f"{meeting.get('id')}_{meeting.get('agent_email')}"
+                    
+                    if meeting_id in processed_meetings:
+                        continue  # Skip if we've already processed this meeting
+                    
+                    processed_meetings.add(meeting_id)
                     meetings_found = True
                     agent_email = meeting.get('agent_email')
                     
