@@ -30,16 +30,25 @@ class ZendeskClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            # Enhanced error logging for debugging
-            print(f"Error making request to Zendesk API: {type(e).__name__}")
-            print(f"URL: {self.base_url}/{endpoint}")
-            print(f"Status Code: {getattr(e.response, 'status_code', 'N/A')}")
-            if hasattr(e, 'response') and e.response is not None:
-                try:
-                    error_details = e.response.json()
-                    print(f"Error Details: {error_details}")
-                except:
-                    print(f"Response Text: {e.response.text}")
+            # Check if this is a known optional endpoint (SLA policies)
+            is_optional_endpoint = (
+                'sla_policies.json' in endpoint and 
+                hasattr(e, 'response') and 
+                e.response is not None and 
+                e.response.status_code == 404
+            )
+            
+            if not is_optional_endpoint:
+                # Enhanced error logging for debugging (skip logging for optional endpoints)
+                print(f"Error making request to Zendesk API: {type(e).__name__}")
+                print(f"URL: {self.base_url}/{endpoint}")
+                print(f"Status Code: {getattr(e.response, 'status_code', 'N/A')}")
+                if hasattr(e, 'response') and e.response is not None:
+                    try:
+                        error_details = e.response.json()
+                        print(f"Error Details: {error_details}")
+                    except:
+                        print(f"Response Text: {e.response.text}")
             return None
     
     def test_connection(self):
@@ -296,10 +305,14 @@ class ZendeskClient:
         
         breach_tickets = []
         for ticket in tickets:
-            # Get SLA policy information for this ticket
+            # Try to get SLA policy information for this ticket
             sla_policies = self._make_request(f'tickets/{ticket["id"]}/sla_policies.json')
             
-            if sla_policies and sla_policies.get('sla_policies'):
+            # Skip SLA processing if endpoint doesn't exist (404 error)
+            if not sla_policies:
+                continue
+                
+            if sla_policies.get('sla_policies'):
                 for policy in sla_policies['sla_policies']:
                     policy_metrics = policy.get('policy_metrics', [])
                     
