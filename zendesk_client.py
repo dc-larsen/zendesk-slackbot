@@ -3,6 +3,7 @@ import re
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
 from config import ZENDESK_BASE_URL, ZENDESK_EMAIL, ZENDESK_API_TOKEN
+from security import safe_requests
 
 class ZendeskClient:
     def __init__(self):
@@ -19,7 +20,7 @@ class ZendeskClient:
         """Make authenticated request to Zendesk API"""
         try:
             url = f"{self.base_url}/{endpoint}"
-            response = requests.get(
+            response = safe_requests.get(
                 url, 
                 auth=self.auth, 
                 headers=self.headers, 
