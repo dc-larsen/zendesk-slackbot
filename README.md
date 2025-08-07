@@ -10,6 +10,8 @@
 ![Zendesk Integration](https://img.shields.io/badge/🎫%20Zendesk-API%20Integration-03363D?style=for-the-badge&logo=zendesk&logoColor=white)
 ![Google Calendar](https://img.shields.io/badge/📅%20Google-Calendar%20API-4285F4?style=for-the-badge&logo=google-calendar&logoColor=white)
 
+![image](https://github.com/user-attachments/assets/8ba34992-0498-4891-bede-d904b249e2f4)
+
 ## Features
 
 - 📅 **Google Calendar Integration**: Monitors calendar events with "1on1" in the title
